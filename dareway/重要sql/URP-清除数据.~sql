@@ -39,4 +39,3 @@ truncate table urp.UCOMPOS_LOG_INFO;
 truncate table urp.E_EQUIPMENT_INFO;
 truncate table urp.INST_INFO;
 truncate table urp.address_book;
-truncate table urp.channel_info;

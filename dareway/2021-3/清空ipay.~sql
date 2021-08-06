@@ -10,6 +10,7 @@ truncate table ipay.sdsz_trade_info;
 truncate table ipay.abnormal_order_detl;
 truncate table ipay.MONGODB_PARA;
 truncate table ipay.ABNORMAL_ORDER_DETL;
+truncate table ipay.overtocash_refund;
 --truncate table ipay.order_gen_det_list;
 truncate table ipay.ucompos_management_info;
 truncate table ipay.order_settlepara;

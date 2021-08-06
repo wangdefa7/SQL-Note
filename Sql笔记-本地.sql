@@ -27,15 +27,20 @@
  select file_name from dba_data_files
  select name from  v$datafile
  
+ -- 设置表空间自动扩容
+ alter database datafile '/opt/oracle/oradata/orcl/ts_hass_1.dbf' autoextend on;
+
+
+ 
  -- 创建表空间(表空间的名字是自己起的，XX.dbf) size 后面配置的是表空间的大小
- create tablespace URP_RUN datafile 'D:\SOFTWARE\SQL\ORACLE\DATA\ORCL\URP_RUN.DBF' size 2G;
+ create tablespace wdf datafile 'D:\software\sql\oracle\mulu\oradata\orcl\WDF.DBF' size 1G;
  
  -- 修改表空间名字
  
- alter tablespace wdf_tablespace rename to TS_IPAY;
+ alter tablespace ddszone rename to TS_DDS;
  
  --设置表空间默认用户
- create user ddszone identified by ddszone default tablespace wdf_tablespace
+ create user wdf identified by wdf default tablespace wdf;
  
  --修改用户的永久表空间可以执行命令: 
  alter user urp default tablespace URP_RUN;
@@ -51,7 +56,7 @@ select t.default_tablespace,
  group by t.default_tablespace;
  
  -- 创建用户（账号：wdf 密码:wdfwdf）赋予表空间:wdf_tablespace
- create user urp identified by dwurp_run default tablespace wdf_tablespace
+ create user ddszone identified by ddszone default tablespace ddszone;
  
  -- 修改用户密码
  alter user urp identified by urp;
@@ -66,7 +71,7 @@ select t.default_tablespace,
   grant UNLIMITED TABLESPACE to ipay;
   
   -- 对账项目赋予用户的角色：创建session角色，创建资源角色,Create table 等等，数据库管理员角色
-  grant connect,resource,dba to urp;
+  grant connect,resource,dba to wdf;
   
   -- （start）plsql 提示 动态执行表不可访问,或在v$session... 中的错误，执行下列sql或者打开：工具->首选项->选项-> 去掉“自动统计”前面的勾选
   -- 根据提示，用sys身份给 XX 用户授权
@@ -182,3 +187,68 @@ select Distinct 'alter system kill session ' || chr(39) || b.sid || ',' ||
  where a.session_id = b.sid;
  -- 释放死锁数据
  alter system kill session '1621,33463';
+ 
+ 
+ 
+ --expdp导出datadump
+ 
+ --创建目录
+ create directory exportDB as 'E:\OracleDB';
+ --查询目录
+ SELECT * FROM dba_directories;
+ 
+ --导出文件
+$expdp urp/urp@urp directory=exportDB dumpfile =20210531.dmp logfile=20210531.log FULL=y;
+
+SELECT * FROM dba_directories;
+-- 删除文件，需要权限
+delete from dba_directories a where a.directory_name = 'ORACLEDB';
+
+
+
+
+--- 用户配置
+
+ alter user ddszone rename to ddszone1 identified by ddszone;  
+ select * from user$ where NAME in ('DDSZONE');
+
+--1、用sysdba账号登入数据库，然后查询到要更改的用户信息：
+
+　  SELECT user#,name FROM user$;
+select user#,name from user$ where name = 'ddszone'；
+
+
+--2、更改用户名并提交：
+
+     UPDATE USER$ SET NAME='ddszone1' WHERE user#=93;
+     COMMIT;
+
+--3、强制刷新：
+
+     ALTER SYSTEM CHECKPOINT;
+     ALTER SYSTEM FLUSH SHARED_POOL;
+
+--4、更新用户的密码：
+
+     ALTER USER PORTAL IDENTIFIED BY 123;
+
+
+
+-- 查看数据库连接情况
+select count(*) from v$session where status='ACTIVE';  
+
+select username,count(username) from v$session where username is not null group by username;  
+
+--查看系统资源  
+SELECT   resource_name,  
+         current_utilization,  
+         max_utilization,  
+         LIMIT,  
+         ROUND (max_utilization / LIMIT * 100) || '%' rate  
+  FROM   (SELECT   resource_name,  
+                   current_utilization,  
+                   max_utilization,  
+                   TO_NUMBER (initial_allocation) LIMIT  
+            FROM   v$resource_limit  
+           WHERE   resource_name IN ('processes', 'sessions')  
+                   AND max_utilization > 0);  
